@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { emailRegex } from "../utils/regex";
 import userModel from "./user..model";
+import { response } from "../utils/responseTemplate";
 
 export const registerWebUser = async (
   req: Request,
@@ -25,14 +26,25 @@ export const registerWebUser = async (
     const error = createHttpError(400, "Please enter valid email");
     return next(error);
   }
-  const user = await userModel.findOne({ email: email });
-  if (user) {
+  const userEmail = await userModel.findOne({ email: email });
+  if (userEmail) {
     const error = createHttpError(
       400,
       "Email already exist please try different email"
     );
     return next(error);
   }
-
-  res.send("User Registerd");
+  const user = await userModel.create({
+    name,
+    email,
+    password,
+  });
+  const createdUser = await userModel
+    .findById(user?.id)
+    .select("-password -refreshtoken");
+  if (!createdUser) {
+    const error = createHttpError(500, "Something went wrong please try again");
+    return next(error);
+  }
+  response("User registerd successfully", createdUser, 200, res);
 };
