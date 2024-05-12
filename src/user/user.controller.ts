@@ -3,6 +3,9 @@ import createHttpError from "http-errors";
 import { emailRegex } from "../utils/regex";
 import userModel from "./user.model";
 import { response } from "../utils/responseTemplate";
+import { config } from "../config/config";
+import jwt, { JwtPayload } from "jsonwebtoken";
+
 interface CustomRequest extends Request {
   user?: any; // Define the type of the 'user' property if needed
 }
@@ -125,12 +128,8 @@ export const loginWebUser = async (
   }
 };
 
-// ------------- Logout ---------------------------
-export const logoutWebUser = async (
-  req: CustomRequest,
-  res: Response,
-  next: NextFunction
-) => {
+// ------------- Logout web user---------------------------
+export const logoutWebUser = async (req: CustomRequest, res: Response) => {
   await userModel.findByIdAndUpdate(
     req.user?._id,
     {
@@ -147,4 +146,55 @@ export const logoutWebUser = async (
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(response("User Logged Out", {}));
+};
+// ------------- Refresh Accesstoken --------------------
+export const refreshAccessToken = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const incomingRefreshToken =
+      req?.cookies?.refreshToken || req.body.refreshToken;
+    if (!incomingRefreshToken) {
+      const error = createHttpError(400, "Unauthorized Request");
+      return next(error);
+    }
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      config?.REFRESH_TOKEN_SECRETE
+    ) as JwtPayload;
+    const user = await userModel
+      .findById(decodedToken?._id)
+      .select("+refreshtoken");
+    if (!user) {
+      const error = createHttpError(400, "Invalid Refresh Token");
+      return next(error);
+    }
+    if (incomingRefreshToken !== user?.refreshtoken) {
+      const error = createHttpError(400, "Refresh token is expired or used.");
+      return next(error);
+    }
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    const token = await generateAccessAndRefreshToken(user._id, next);
+    if (token) {
+      const { accessToken, refreshToken } = token;
+      res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+          response("Access token refreshed", {
+            accessToken,
+            refreshToken,
+          })
+        );
+    }
+  } catch (e) {
+    const error = createHttpError(400, "Unable to refresh accesstoken.");
+    return next(error);
+  }
 };
