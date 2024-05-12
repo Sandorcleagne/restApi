@@ -1,9 +1,36 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { emailRegex } from "../utils/regex";
-import userModel from "./user..model";
+import userModel from "./user.model";
 import { response } from "../utils/responseTemplate";
+interface CustomRequest extends Request {
+  user?: any; // Define the type of the 'user' property if needed
+}
 
+// ------------- Generate access -----------------------
+const generateAccessAndRefreshToken = async (
+  userId: string,
+  next: NextFunction
+) => {
+  try {
+    const user = await userModel.findById(userId);
+    const accessToken = await user?.generateAccesstoken();
+    const refreshToken = await user?.generateRefreshToken();
+    if (user) {
+      user["refreshtoken"] = refreshToken || "";
+    }
+    await user?.save({ validateBeforeSave: false });
+    return { accessToken, refreshToken };
+  } catch (e) {
+    const error = createHttpError(
+      500,
+      "Something went wrong while generating token"
+    );
+    return next(error);
+  }
+};
+
+// ------------- Register Web User -----------------------
 export const registerWebUser = async (
   req: Request,
   res: Response,
@@ -46,5 +73,78 @@ export const registerWebUser = async (
     const error = createHttpError(500, "Something went wrong please try again");
     return next(error);
   }
-  response("User registerd successfully", createdUser, 200, res);
+  res.status(201).json(response("User registerd successfully", createdUser));
+};
+
+// ------------- Login Web User ---------------------------
+export const loginWebUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email, password } = req.body;
+  if (!(email || password)) {
+    const error = createHttpError(400, "Email and password is required");
+    return next(error);
+  }
+  const user = await userModel.findOne({ email: email });
+  if (!user) {
+    const error = createHttpError(400, "User does not exists");
+    return next(error);
+  }
+  if (!user.active) {
+    const error = createHttpError(400, "User not active for login.");
+    return next(error);
+  }
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    const error = createHttpError(400, "Inavlid Credentiails");
+    return next(error);
+  }
+  const token = await generateAccessAndRefreshToken(user._id, next);
+  if (token) {
+    const { accessToken, refreshToken } = token;
+    const loggedInUser = await userModel
+      .findById(user?._id)
+      .select("-password -refreshtoken");
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        response("User logged in successfully", {
+          userDetails: loggedInUser,
+          accessToken,
+          refreshToken,
+        })
+      );
+  }
+};
+
+// ------------- Logout ---------------------------
+export const logoutWebUser = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  await userModel.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: { refreshtoken: undefined },
+    },
+    { new: true }
+  );
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(response("User Logged Out", {}));
 };

@@ -1,12 +1,7 @@
-export const response = (
-  message: any,
-  result: any,
-  statusCode: any,
-  res: any
-) => {
-  return res.status(statusCode).json({
+export const response = (message: string, result: any) => {
+  return {
     status: true,
     message: message,
     result: result,
-  });
+  };
 };

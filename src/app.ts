@@ -1,11 +1,20 @@
 import express, { NextFunction, Request, Response } from "express";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import userRouter from "./user/user.router";
+import cookieParser from "cookie-parser";
+import { verifyJWT } from "./middlewares/auth.middleware";
 const app = express();
 app.use(express.json({ limit: "40kb" }));
-app.get("/api/v1/", (req: Request, res: Response, next: NextFunction) => {
-  res.json({ message: "This is an API" });
-});
+app.use(express.urlencoded({ extended: true, limit: "40kb" }));
+app.use(express.static("public"));
+app.use(cookieParser());
+app.get(
+  "/api/v1/",
+  verifyJWT,
+  (req: Request, res: Response, next: NextFunction) => {
+    res.json({ message: "This is an API" });
+  }
+);
 
 // routes
 
