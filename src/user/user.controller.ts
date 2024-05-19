@@ -5,10 +5,7 @@ import userModel from "./user.model";
 import { response } from "../utils/responseTemplate";
 import { config } from "../config/config";
 import jwt, { JwtPayload } from "jsonwebtoken";
-
-interface CustomRequest extends Request {
-  user?: any; // Define the type of the 'user' property if needed
-}
+import { CustomRequest } from "../other.types";
 
 // ------------- Generate access -----------------------
 const generateAccessAndRefreshToken = async (

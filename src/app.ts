@@ -3,6 +3,7 @@ import globalErrorHandler from "./middlewares/globalErrorHandler";
 import userRouter from "./user/user.router";
 import cookieParser from "cookie-parser";
 import { verifyJWT } from "./middlewares/auth.middleware";
+import bookRouter from "./book/book.router";
 const app = express();
 app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true, limit: "40kb" }));
@@ -19,6 +20,7 @@ app.get(
 // routes
 
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/books", bookRouter);
 
 // Global Error Handler
 

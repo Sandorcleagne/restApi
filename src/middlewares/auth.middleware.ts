@@ -3,10 +3,7 @@ import createHttpError from "http-errors";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/config";
 import userModel from "../user/user.model";
-interface CustomRequest extends Request {
-  user?: any; // Define the type of the 'user' property if needed
-}
-
+import { CustomRequest } from "../other.types";
 export const verifyJWT = async (
   req: CustomRequest,
   res: Response,
