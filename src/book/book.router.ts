@@ -1,5 +1,11 @@
 import express from "express";
-import { createBook } from "./book.controller";
+import {
+  createBookCrm,
+  deactivateBookById,
+  getAllBooks,
+  getBookById,
+  updateBookCrmGenInfo,
+} from "./book.controller";
 import multer from "multer";
 import path from "node:path";
 
@@ -14,6 +20,10 @@ bookRouter.post(
     { name: "coverImage", maxCount: 1 },
     { name: "file", maxCount: 1 },
   ]),
-  createBook
+  createBookCrm
 );
+bookRouter.patch("/update-book-gen-info/:bookId", updateBookCrmGenInfo);
+bookRouter.get("/get-all-books/:limit", getAllBooks);
+bookRouter.get("/get-book-by-id/:bookId", getBookById);
+bookRouter.patch("/activate-deactivate-book/:bookId", deactivateBookById);
 export default bookRouter;
