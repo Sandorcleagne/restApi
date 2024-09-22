@@ -5,11 +5,13 @@ import cookieParser from "cookie-parser";
 import { verifyJWT } from "./middlewares/auth.middleware";
 import bookRouter from "./book/book.router";
 import CRMUserRouter from "./crmusers/crmusers.router";
+import cors from "cors";
 const app = express();
+app.use(cookieParser());
 app.use(express.json({ limit: "40kb" }));
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.urlencoded({ extended: true, limit: "40kb" }));
 app.use(express.static("public"));
-app.use(cookieParser());
 app.get(
   "/api/v1/",
   // verifyJWT,

@@ -5,7 +5,7 @@ import path from "node:path";
 import createHttpError from "http-errors";
 import fs from "node:fs";
 import { response } from "../utils/responseTemplate";
-import { getPublicIdFromUrl } from "../utils/coludinaryUtils";
+// import { getPublicIdFromUrl } from "../utils/coludinaryUtils";
 
 // ----------------------- create-book-controller-crm -----------------
 export const createBookCrm = async (
@@ -14,10 +14,13 @@ export const createBookCrm = async (
   next: NextFunction
 ) => {
   try {
-    const { title, genre, author } = req.body;
+    const { title, genre, author, description } = req.body;
 
     const files = req?.files as { [fieldname: string]: Express.Multer.File[] }; // to configure the file object for typescript
-    if ([title, genre, author].some((fields) => fields.trim() === "")) {
+    console.log("files", files);
+    if (
+      [title, genre, author, description].some((fields) => fields.trim() === "")
+    ) {
       const error = createHttpError(400, "All Feilds are required");
       return next(error);
     }
@@ -54,6 +57,7 @@ export const createBookCrm = async (
       author: author,
       coverImage: uploadResult?.secure_url,
       file: uploadBookResult?.secure_url,
+      description: description,
     });
     await fs.promises.unlink(filePath);
     await fs.promises.unlink(bookfilePath);
@@ -117,7 +121,7 @@ export const getAllBooks = async (
   next: NextFunction
 ) => {
   try {
-    const book = await bookModel.find({});
+    const book = (await bookModel.find({})).reverse();
     if (book.length > 0) {
       res
         .status(200)

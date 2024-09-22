@@ -8,6 +8,7 @@ import {
 } from "./book.controller";
 import multer from "multer";
 import path from "node:path";
+import { verifyJWTCRM } from "../middlewares/auth.middleware";
 
 const bookRouter = express.Router();
 const upload = multer({
@@ -23,7 +24,7 @@ bookRouter.post(
   createBookCrm
 );
 bookRouter.patch("/update-book-gen-info/:bookId", updateBookCrmGenInfo);
-bookRouter.get("/get-all-books/:limit", getAllBooks);
+bookRouter.get("/get-all-books/:limit", verifyJWTCRM, getAllBooks);
 bookRouter.get("/get-book-by-id/:bookId", getBookById);
 bookRouter.patch("/activate-deactivate-book/:bookId", deactivateBookById);
 export default bookRouter;

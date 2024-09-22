@@ -23,6 +23,10 @@ const bookSchema = new mongoose.Schema<Book>(
       type: String,
       required: true,
     },
+    description: {
+      type: String,
+      required: true,
+    },
     active: {
       type: Boolean,
       default: true,

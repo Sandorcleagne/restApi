@@ -5,6 +5,8 @@ import { response } from "../utils/responseTemplate";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import crmuserModel from "./crmuser.model";
 import { CustomRequest } from "../other.types";
+import { config } from "../config/config";
+import { options } from "../constant";
 const generateAccessAndRefreshToken = async (
   userId: string,
   next: NextFunction
@@ -105,10 +107,7 @@ export const loginCRMUser = async (
     const loggedInUser = await crmuserModel
       .findById(user?._id)
       .select("-password -refreshtoken");
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
+
     res
       .status(200)
       .cookie("accessToken", accessToken, options)
@@ -140,4 +139,53 @@ export const logoutCRMUser = async (req: CustomRequest, res: Response) => {
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(response("User Logged Out", {}));
+};
+
+export const refreshAccessToken = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const incomingRefreshToken =
+      req?.cookies?.refreshToken || req.body?.refreshToken;
+    console.log("incomingRefreshToken", incomingRefreshToken);
+    if (!incomingRefreshToken) {
+      const error = createHttpError(401, "Unauthorized Request++");
+      return next(error);
+    }
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      config?.REFRESH_TOKEN_SECRETE
+    ) as JwtPayload;
+    const user = await crmuserModel
+      .findById(decodedToken?._id)
+      .select("+refreshtoken");
+    if (!user) {
+      const error = createHttpError(400, "Invalid Refresh Token");
+      return next(error);
+    }
+    if (incomingRefreshToken !== user?.refreshtoken) {
+      const error = createHttpError(400, "Refresh token is expired or used.");
+      return next(error);
+    }
+    const token = await generateAccessAndRefreshToken(user._id, next);
+    if (token) {
+      const { accessToken, refreshToken } = token;
+      res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+          response("Access token refreshed", {
+            accessToken,
+            refreshToken,
+          })
+        );
+    }
+  } catch (e) {
+    console.log("error", e);
+    const error = createHttpError(401, "Unable to refresh accesstoken.");
+    return next(error);
+  }
 };
