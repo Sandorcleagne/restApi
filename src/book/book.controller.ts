@@ -121,16 +121,46 @@ export const getAllBooks = async (
   next: NextFunction
 ) => {
   try {
-    const book = (await bookModel.find({})).reverse();
-    if (book.length > 0) {
+    const page = parseInt((req.query.page as string) || "1"); // Default to page 1 if not provided
+    const limit = parseInt((req.query.limit as string) || "10"); // Default to 10 items per page
+    const totalBooks = await bookModel.countDocuments(); // Get total number of books
+    const totalPages = Math.ceil(totalBooks / limit); // Calculate total pages
+
+    // Correct usage of skip and limit in the query
+    const books = await bookModel
+      .find({})
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec(); // Execute the query
+
+    // Reverse the books array if necessary
+    const reversedBooks = books.reverse();
+
+    // Calculate next and previous pages
+    const nextPage = page < totalPages ? page + 1 : null;
+    const prevPage = page > 1 ? page - 1 : null;
+
+    if (reversedBooks.length > 0) {
+      res.status(200).json(
+        response("Books found successfully", {
+          books: reversedBooks,
+          pagination: {
+            totalBooks, // Total number of books
+            totalPages, // Total number of pages
+            currentPage: page, // Current page number
+            nextPage, // Next page (or null if no next page)
+            prevPage, // Previous page (or null if no previous page)
+            booksPerPage: limit, // Number of books per page (limit)
+          },
+        })
+      );
+    } else {
       res
         .status(200)
-        .json(response("books found successfully", { books: book }));
-    } else {
-      res.status(200).json(response("No books available", { books: [] }));
+        .json(response("No books available", { books: [], pagination: {} }));
     }
   } catch (e) {
-    const error = createHttpError(500, "Error While getting book");
+    const error = createHttpError(500, "Error while getting books");
     return next(error);
   }
 };

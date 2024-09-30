@@ -45,7 +45,6 @@ export const verifyJWTCRM = async (
     const token =
       req?.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer ", "");
-    console.log("token", token);
     if (!token) {
       const error = createHttpError(401, "Uauthorized request");
       return next(error);
@@ -54,7 +53,6 @@ export const verifyJWTCRM = async (
       token,
       config?.ACCESS_TOKEN_SECRETE
     ) as JwtPayload;
-    console.log("decodedToken", decodedToken);
     const user = await crmuserModel
       .findById(decodedToken?._id)
       .select("-password -refreshtoken");

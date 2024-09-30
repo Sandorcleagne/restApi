@@ -24,7 +24,7 @@ bookRouter.post(
   createBookCrm
 );
 bookRouter.patch("/update-book-gen-info/:bookId", updateBookCrmGenInfo);
-bookRouter.get("/get-all-books/:limit", verifyJWTCRM, getAllBooks);
+bookRouter.get("/get-all-books", verifyJWTCRM, getAllBooks);
 bookRouter.get("/get-book-by-id/:bookId", getBookById);
 bookRouter.patch("/activate-deactivate-book/:bookId", deactivateBookById);
 export default bookRouter;
