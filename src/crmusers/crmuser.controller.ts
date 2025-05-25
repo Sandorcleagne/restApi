@@ -49,15 +49,8 @@ export const registerCRMUser = async (
     const error = createHttpError(400, "Please enter valid email");
     return next(error);
   }
-  //   const userEmail = await crmuserModel.findOne({ email: email }); we are not taking different email from every user for this time.
   const username = await crmuserModel.findOne({ userName: userName });
-  //   if (userEmail) {
-  //     const error = createHttpError(
-  //       400,
-  //       "Email already exist please try different email"
-  //     );
-  //     return next(error);
-  //   }
+
   if (username) {
     const error = createHttpError(
       400,

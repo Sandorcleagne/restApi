@@ -17,7 +17,6 @@ export const createBookCrm = async (
     const { title, genre, author, description } = req.body;
 
     const files = req?.files as { [fieldname: string]: Express.Multer.File[] }; // to configure the file object for typescript
-    console.log("files", files);
     if (
       [title, genre, author, description].some((fields) => fields.trim() === "")
     ) {

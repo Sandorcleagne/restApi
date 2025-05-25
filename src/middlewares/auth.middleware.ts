@@ -63,7 +63,6 @@ export const verifyJWTCRM = async (
     req.user = user;
     next();
   } catch (e) {
-    console.log("e", e);
     const error = createHttpError(401, "Invalid accesstoken");
     return next(error);
   }
